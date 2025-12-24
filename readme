@@ -1,0 +1,48 @@
+/opt/smart-os/
+├── agent/
+│   ├── monitor.py      # system metrics
+│   ├── detector.py     # ML anomaly detection
+│   ├── decision.py     # rules + AI
+│   ├── actions.py      # safe OS actions
+│   └── main.py         # orchestrator
+├── data/
+│   └── metrics.csv
+├── logs/
+│   └── agent.log
+└── requirements.txt
+
+sudo mkdir -p /opt/smart-os/{agent,data,logs}
+sudo chown -R $USER:$USER /opt/smart-os
+
+pip install psutil scikit-learn pandas
+
+sudo nano /etc/systemd/system/smart-os.service
+[Unit]
+Description=Smart OS AI Agent
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/smart-os/agent/main.py
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+
+
+sudo systemctl daemon-reload
+sudo systemctl enable smart-os
+sudo systemctl start smart-os
+
+
+journalctl -u smart-os -f
+
+
+##CSV File generate script
+while true; do
+  echo "$(top -bn1 | grep Cpu | awk '{print $2}'),\
+$(free | grep Mem | awk '{print $3/$2 * 100.0}'),\
+$(df / | tail -1 | awk '{print $5}' | tr -d '%'),\
+$(ps aux | wc -l)" >> /opt/smart-os/data/metrics.csv
+  sleep 10
+done
